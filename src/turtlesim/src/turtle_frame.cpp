@@ -51,16 +51,18 @@ TurtleFrame::TurtleFrame(QWidget* parent, Qt::WindowFlags f)
 : QFrame(parent, f)
 // , path_image_("/home/mav-lab/Datasets/zjg_AG/qiushidabuilding/test.png")
 , path_painter_(&path_image_)
-, image_id_(0)
+, image_id_(40)
+, image_size(260)
+, image_step(2)
 , frame_count_(0)
 , id_counter_(0)
 , current_angle_(0.0)
 , private_nh_("~")
 {
-  QImage image("/home/mav-lab/Datasets/zjg_AG/qiushidabuilding/test.png");
-  image = image.scaled(1135, 782);
+  QImage image("/home/mav-lab/qsdjt_sat.png");
+  image = image.scaled(2953, 1590);
   path_image_ = image;
-  setFixedSize(1135, 782);
+  setFixedSize(2953, 1590);
   setWindowTitle("TurtleSim");
 
   srand(time(NULL));
@@ -107,8 +109,8 @@ TurtleFrame::TurtleFrame(QWidget* parent, Qt::WindowFlags f)
   {
     QImage img;
     // img.load("/home/mav-lab/Datasets/zjg_AG/qiushidabuilding/zjg_image_qsdjt/0.jpg");
-    img.load("/home/mav-lab/r_-76.34_x_792_y_176.jpg");
-    img = img.scaled(100, 100, Qt::KeepAspectRatio);
+    img.load("/media/mav-lab/1T/Datasets/zjg_AG/qiushidabuilding/zjg_image/40.jpg");
+    img = img.scaled(image_size, image_size, Qt::KeepAspectRatio);
     turtle_images_.append(img);
   }
 
@@ -121,16 +123,18 @@ TurtleFrame::TurtleFrame(QWidget* parent, Qt::WindowFlags f)
   spawn_srv_ = nh_.advertiseService("spawn", &TurtleFrame::spawnCallback, this);
   kill_srv_ = nh_.advertiseService("kill", &TurtleFrame::killCallback, this);
   save_signal_sub_ = nh_.subscribe("/turtle1/save", 1, &TurtleFrame::saveAndSpawnCallback, this);
+  skip_signal_sub_ = nh_.subscribe("/turtle1/skip", 1, &TurtleFrame::skipAndSpawnCallback, this);
+
   pose_sub_ = nh_.subscribe("/turtle/pose", 1, &TurtleFrame::poseCallback, this);
   trans_sub_ = nh_.subscribe("/turtle1/trans", 1, &TurtleFrame::transCallback, this);
   ROS_INFO("Starting turtlesim with node name %s", ros::this_node::getName().c_str()) ;
 
   width_in_meters_ = (width() - 1) / meter_;
   height_in_meters_ = (height() - 1) / meter_;
-  spawnTurtle("", 9.79, 2.03, 3.06);
-  current_x = 9.79;
-  current_y = 2.03;
-  current_angle_ = 3.06;
+  spawnTurtle("", 8.8, 1.45, 3.116700);
+  current_x = 8.8;
+  current_y = 1.45;
+  current_angle_ = 3.116700;
 
   // spawn all available turtle types
   if(false)
@@ -210,11 +214,11 @@ std::string TurtleFrame::spawnTurtle(const std::string& name, float x, float y, 
   }
   std::ostringstream cc;
   cc << index;
-  currentName_ = ("/home/mav-lab/Datasets/zjg_AG/qiushidabuilding/zjg_image_qsdjt/" + cc.str() + ".jpg").c_str();
+  currentName_ = ("/media/mav-lab/1T/Datasets/zjg_AG/qiushidabuilding/zjg_image/" + cc.str() + ".jpg").c_str();
   // currentName_ = "/home/mav-lab/r_-76.34_x_792_y_176.jpg";
   QImage groundImage;
   groundImage.load(currentName_);
-  groundImage = groundImage.scaled(100, 100, Qt::KeepAspectRatio);
+  groundImage = groundImage.scaled(image_size, image_size, Qt::KeepAspectRatio);
 
   groundImage.convertToFormat(QImage::Format_ARGB32);
 
@@ -328,13 +332,30 @@ void TurtleFrame::saveAndSpawnCallback(const std_msgs::Bool::ConstPtr& saveSigna
     M_Turtle::iterator it = turtles_.begin();
     turtles_.erase(it);
     spawnTurtle("", current_x, current_y, current_angle_, image_id_);
-    image_id_++;
+    image_id_+=image_step;
 
-    std::ofstream outFile("/home/mav-lab/gt_manual.csv", ios::app);
-    outFile << q2s(currentName_) << ',' << current_x * 200 << ',' << current_y * 200 << ',' << current_angle_ / PI * 180.0 - 90.0 << endl;
+    std::ofstream outFile("/home/mav-lab/gt_I2S_qsdjt_manual.csv", ios::app);
+    outFile << q2s(currentName_) << ',' << current_x * image_size << ',' << current_y * image_size << ',' << current_angle_ / PI * 180.0 - 90.0 << endl;
     outFile.close();
   }
 }
+
+void TurtleFrame::skipAndSpawnCallback(const std_msgs::Bool::ConstPtr& skipSignal)
+{
+  if(skipSignal->data == true)
+  {
+    cout << "Skip" << endl;
+    M_Turtle::iterator it = turtles_.begin();
+    turtles_.erase(it);
+    spawnTurtle("", current_x, current_y, current_angle_, image_id_);
+    image_id_+=image_step;
+
+    // std::ofstream outFile("/home/mav-lab/gt_laser_qsdjt_manual.csv", ios::app);
+    // outFile << q2s(currentName_) << ',' << current_x * image_size << ',' << current_y * image_size << ',' << current_angle_ / PI * 180.0 - 90.0 << endl;
+    // outFile.close();
+  }
+}
+
 
 void TurtleFrame::poseCallback(const turtlesim::Pose::ConstPtr& pose)
 {
@@ -367,6 +388,7 @@ void TurtleFrame::transCallback(const geometry_msgs::Twist::ConstPtr& trans)
   }
 }
 
+// opacity
 QImage TurtleFrame::setOpacity(QImage& image, qreal opacity)
 {
   QImage newImg(image.size(), QImage::Format_ARGB32);
@@ -379,11 +401,13 @@ QImage TurtleFrame::setOpacity(QImage& image, qreal opacity)
   return newImg;
 }
 
+// String to QString
 QString TurtleFrame::s2q(const std::string &s)   
 {   
 return QString(QString::fromLocal8Bit(s.c_str()));   
 }
 
+// QString to string
 std::string TurtleFrame::q2s(const QString &s)   
 {   
 return string((const char *)s.toLocal8Bit());   

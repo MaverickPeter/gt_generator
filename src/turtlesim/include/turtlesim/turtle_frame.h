@@ -84,6 +84,8 @@ private:
   bool spawnCallback(turtlesim::Spawn::Request&, turtlesim::Spawn::Response&);
   bool killCallback(turtlesim::Kill::Request&, turtlesim::Kill::Response&);
   void saveAndSpawnCallback(const std_msgs::Bool::ConstPtr& saveSignal);
+  void skipAndSpawnCallback(const std_msgs::Bool::ConstPtr& skipSignal);
+
   void poseCallback(const turtlesim::Pose::ConstPtr& pose);
   void transCallback(const geometry_msgs::Twist::ConstPtr& trans);
 
@@ -104,6 +106,7 @@ private:
   ros::Subscriber save_signal_sub_;
   ros::Subscriber pose_sub_;
   ros::Subscriber trans_sub_;
+  ros::Subscriber skip_signal_sub_;
 
   typedef std::map<std::string, TurtlePtr> M_Turtle;
   M_Turtle turtles_;
@@ -123,6 +126,8 @@ private:
   float meter_;
   float width_in_meters_;
   float height_in_meters_;
+  int image_size;
+  int image_step;
 };
 
 }

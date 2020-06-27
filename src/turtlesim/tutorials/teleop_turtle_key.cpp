@@ -166,6 +166,7 @@ private:
   double linear_t, angular_t;
   ros::Publisher twist_pub_;
   ros::Publisher save_sig_;
+  ros::Publisher skip_sig_;
   ros::Publisher trans_pub_;
 };
 
@@ -182,6 +183,8 @@ TeleopTurtle::TeleopTurtle():
 
   twist_pub_ = nh_.advertise<geometry_msgs::Twist>("turtle1/cmd_vel", 1);
   save_sig_ = nh_.advertise<std_msgs::Bool>("turtle1/save", 1);
+  skip_sig_ = nh_.advertise<std_msgs::Bool>("turtle1/skip", 1);
+
   trans_pub_ = nh_.advertise<geometry_msgs::Twist>("turtle1/trans", 1);
 
 }
@@ -214,6 +217,7 @@ void TeleopTurtle::keyLoop()
   char c;
   bool dirty = false;
   bool saveState = false;
+  bool skipState = false;
 
   puts("Reading from keyboard");
   puts("---------------------------");
@@ -236,6 +240,7 @@ void TeleopTurtle::keyLoop()
     linear_ = angular_ = 0;
     linear_t = angular_t = 0;
     saveState=false;
+    skipState=false;
     ROS_DEBUG("value: 0x%02X\n", c);
   
     switch(c)
@@ -265,6 +270,11 @@ void TeleopTurtle::keyLoop()
         saveState = true;
         dirty = true;
         break;
+      case KEYCODE_V:
+        ROS_DEBUG("skip");
+        skipState = true;
+        dirty = true;
+        break;
       case KEYCODE_R: // linear -> vertical
         ROS_DEBUG("TOP");
         linear_t = -1.0;
@@ -292,16 +302,19 @@ void TeleopTurtle::keyLoop()
    
     std_msgs::Bool saveSig;
     saveSig.data = saveState;
+    std_msgs::Bool skipSig;
+    skipSig.data = skipState;
     geometry_msgs::Twist twist;
     twist.angular.z = a_scale_*angular_*0.05;
     twist.linear.x = l_scale_*linear_*0.05;
     geometry_msgs::Twist translation;
-    translation.angular.z = a_scale_*angular_t*0.01;
-    translation.linear.x = l_scale_*linear_t*0.01;
+    translation.angular.z = a_scale_*angular_t*0.005;
+    translation.linear.x = l_scale_*linear_t*0.005;
 
     if(dirty ==true)
     {
       save_sig_.publish(saveSig);
+      skip_sig_.publish(skipSig);
       twist_pub_.publish(twist);
       trans_pub_.publish(translation); 
       dirty=false;
