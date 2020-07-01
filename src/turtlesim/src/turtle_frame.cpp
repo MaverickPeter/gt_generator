@@ -52,7 +52,7 @@ TurtleFrame::TurtleFrame(QWidget* parent, Qt::WindowFlags f)
 // , path_image_("/home/mav-lab/Datasets/zjg_AG/qiushidabuilding/test.png")
 , path_painter_(&path_image_)
 , image_id_(40)
-, image_size(260)
+, image_size(210)
 , image_step(2)
 , frame_count_(0)
 , id_counter_(0)
@@ -60,6 +60,7 @@ TurtleFrame::TurtleFrame(QWidget* parent, Qt::WindowFlags f)
 , private_nh_("~")
 {
   QImage image("/home/mav-lab/qsdjt_sat.png");
+  cout << "load aerial image" << endl;
   image = image.scaled(2953, 1590);
   path_image_ = image;
   setFixedSize(2953, 1590);
@@ -109,7 +110,7 @@ TurtleFrame::TurtleFrame(QWidget* parent, Qt::WindowFlags f)
   {
     QImage img;
     // img.load("/home/mav-lab/Datasets/zjg_AG/qiushidabuilding/zjg_image_qsdjt/0.jpg");
-    img.load("/media/mav-lab/1T/Datasets/zjg_AG/qiushidabuilding/zjg_image/40.jpg");
+    img.load("/media/mav-lab/1T/Datasets/zjg_AG/yueyalou/zjg_laser_image/40.jpg");
     img = img.scaled(image_size, image_size, Qt::KeepAspectRatio);
     turtle_images_.append(img);
   }
@@ -214,7 +215,7 @@ std::string TurtleFrame::spawnTurtle(const std::string& name, float x, float y, 
   }
   std::ostringstream cc;
   cc << index;
-  currentName_ = ("/media/mav-lab/1T/Datasets/zjg_AG/qiushidabuilding/zjg_image/" + cc.str() + ".jpg").c_str();
+  currentName_ = ("/media/mav-lab/1T/Datasets/zjg_AG/yueyalou/zjg_laser_image/" + cc.str() + ".jpg").c_str();
   // currentName_ = "/home/mav-lab/r_-76.34_x_792_y_176.jpg";
   QImage groundImage;
   groundImage.load(currentName_);
@@ -332,9 +333,10 @@ void TurtleFrame::saveAndSpawnCallback(const std_msgs::Bool::ConstPtr& saveSigna
     M_Turtle::iterator it = turtles_.begin();
     turtles_.erase(it);
     spawnTurtle("", current_x, current_y, current_angle_, image_id_);
+    cout << "save image id: " << image_id_ << endl;
     image_id_+=image_step;
 
-    std::ofstream outFile("/home/mav-lab/gt_I2S_qsdjt_manual.csv", ios::app);
+    std::ofstream outFile("/home/mav-lab/gt_L2S_yyl_manual.csv", ios::app);
     outFile << q2s(currentName_) << ',' << current_x * image_size << ',' << current_y * image_size << ',' << current_angle_ / PI * 180.0 - 90.0 << endl;
     outFile.close();
   }
